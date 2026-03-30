@@ -49,74 +49,61 @@
     const overlay = document.getElementById('loading-overlay');
 
     // 1. M3U Listesini Çek ve Ayıkla
-    async function init() {
-        try {
-            // Liste çekimini de kendi Vercel proxy'miz üzerinden yapıyoruz (CORS hatasını önlemek için)
-            const res = await fetch(`/api/proxy?url=${encodeURIComponent(M3U_URL)}`);
-            const text = await res.text();
-            parseM3U(text);
-        } catch (e) {
-            document.getElementById('channel-list').innerHTML = "Liste yükleme hatası!";
-        }
-    }
-
-    function parseM3U(data) {
-        const lines = data.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes("#EXTINF:")) {
-                const name = lines[i].split(',').pop().trim();
-                const url = lines[i + 1]?.trim();
-                // Sadece TR kanallarını filtreleyelim (İsteğe bağlı)
-                if (url && (name.includes("TR") || lines[i].includes("SINEMA"))) {
-                    channels.push({ name, url });
-                }
-            }
-        }
-        renderChannels();
-    }
-
-    function renderChannels() {
-        const query = document.getElementById('search').value.toLowerCase();
-        const filtered = channels.filter(c => c.name.toLowerCase().includes(query));
-        document.getElementById('channel-list').innerHTML = filtered.map(c => 
-            `<div class="channel-item" onclick="playStream(this, '${c.url}')">${c.name}</div>`
-        ).join('');
-    }
-
-    function playStream(el, streamUrl) {
-        // Aktif sınıfını güncelle
+    async function playStream(el, streamUrl) {
+        // 1. Arayüzü Güncelle
         document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
         overlay.style.display = "block";
+        overlay.innerText = "Kanal Hazırlanıyor...";
 
-        // Vercel Proxy URL oluştur
         const finalUrl = `/api/proxy?url=${encodeURIComponent(streamUrl)}`;
 
-        if (hls) { hls.destroy(); }
+        // 2. ESKİ OYNATICIYI TEMİZLE (Kritik Nokta)
+        if (hls) {
+            hls.detachMedia(); // Videodan ayır
+            hls.destroy();     // Tamamen yok et
+            hls = null;
+        }
+        
+        // Videoyu tamamen durdur ve temizle
+        video.pause();
+        video.removeAttribute('src'); 
+        video.load(); 
 
+        // 3. YENİ OYNATICIYI KUR
         if (Hls.isSupported()) {
             hls = new Hls({
-                xhrSetup: function(xhr, url) {
-                    // Hiçbir yere takılmaması için ayar
-                    xhr.withCredentials = false;
-                },
-                // Linklerin bozulmaması için önemli
-                enableWorker: true,
-                lowLatencyMode: true
+                maxBufferLength: 30, // Donmaları önlemek için tampon
+                enableWorker: true
             });
+            
             hls.loadSource(finalUrl);
             hls.attachMedia(video);
-            // ... geri kalan hls.on kısımları aynı kalabilir
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                overlay.style.display = "none";
+                // play() isteğini bir Promise gibi yönetiyoruz
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Otomatik oynatma engellendi, kullanıcı etkileşimi bekleniyor.");
+                    });
+                }
+            });
+
+            hls.on(Hls.Events.ERROR, function (event, data) {
+                if (data.fatal) {
+                    overlay.innerText = "Yayın başlatılamadı!";
+                    console.error("HLS Hatası:", data);
+                }
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // iOS Safari için
+            video.src = finalUrl;
+            video.addEventListener('loadedmetadata', function() {
                 video.play();
                 overlay.style.display = "none";
             });
-            hls.on(Hls.Events.ERROR, () => { overlay.innerText = "Yayın hatası!"; });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // iOS Native Oynatıcı
-            video.src = finalUrl;
-            video.play();
-            overlay.style.display = "none";
         }
     }
 
