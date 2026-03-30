@@ -9,20 +9,17 @@ export default async function handler(req, res) {
       headers: { 
         "User-Agent": "VLC/3.0.12 LibVLC/3.0.12",
         "Referer": "http://puhtvhd.shop:8080/",
-        "Connection": "keep-alive"
       }
     });
 
-    if (!response.ok) throw new Error(`Sunucu hatası: ${response.status}`);
+    if (!response.ok) throw new Error(`Sunucu Hatası: ${response.status}`);
 
     // CORS Ayarları
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     
-    // Veri Tipini Belirle
-    let contentType = response.headers.get("content-type") || "";
-    
-    // Eğer .m3u8 dosyasıysa içeriği düzenle
+    const contentType = response.headers.get("content-type") || "";
+
+    // M3U8 Dosyası ise içeriği manipüle et
     if (decodedUrl.includes(".m3u8") || contentType.includes("mpegurl")) {
       let text = await response.text();
       const baseUrl = decodedUrl.substring(0, decodedUrl.lastIndexOf('/') + 1);
@@ -39,15 +36,25 @@ export default async function handler(req, res) {
       return res.send(updatedText);
     }
 
-    // EĞER .ts VİDEO PARÇASIYSA (En Önemli Kısım)
-    res.setHeader("Content-Type", "video/mp2t"); // Tarayıcıya bunun video olduğunu zorla söylüyoruz
-    res.setHeader("Cache-Control", "public, max-age=3600"); // Takılmaları önlemek için önbellek
+    // VİDEO PARÇASI (.ts) İSE: Beklemeden akıt (Stream)
+    res.setHeader("Content-Type", "video/mp2t");
     
-    const arrayBuffer = await response.arrayBuffer();
-    return res.send(Buffer.from(arrayBuffer));
+    // Vercel'de Buffer yerine doğrudan ReadableStream kullanıyoruz
+    const reader = response.body.getReader();
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(value); // Veri geldikçe gönder
+    }
+    
+    res.end();
 
   } catch (e) {
     console.error("Proxy hatası:", e.message);
-    res.status(500).send("Hata: " + e.message);
+    // Hata mesajını detaylı görelim
+    if (!res.headersSent) {
+        res.status(500).send("Proxy Patladı: " + e.message);
+    }
   }
 }
