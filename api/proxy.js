@@ -3,42 +3,51 @@ export default async function handler(req, res) {
   if (!url) return res.status(400).send("URL eksik");
 
   const decodedUrl = decodeURIComponent(url);
-  const baseUrl = decodedUrl.substring(0, decodedUrl.lastIndexOf('/') + 1);
 
   try {
     const response = await fetch(decodedUrl, {
       headers: { 
         "User-Agent": "VLC/3.0.12 LibVLC/3.0.12",
-        "Referer": "http://puhtvhd.shop:8080/" 
+        "Referer": "http://puhtvhd.shop:8080/",
+        "Connection": "keep-alive"
       }
     });
 
-    const contentType = response.headers.get("content-type");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Content-Type", contentType);
+    if (!response.ok) throw new Error(`Sunucu hatası: ${response.status}`);
 
-    // Eğer gelen veri bir M3U8 listesiyse, içindeki linkleri PROXY linkine çeviriyoruz
-    if (contentType && (contentType.includes("mpegurl") || contentType.includes("application/x-mpegurl") || decodedUrl.includes(".m3u8"))) {
+    // CORS Ayarları
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    
+    // Veri Tipini Belirle
+    let contentType = response.headers.get("content-type") || "";
+    
+    // Eğer .m3u8 dosyasıysa içeriği düzenle
+    if (decodedUrl.includes(".m3u8") || contentType.includes("mpegurl")) {
       let text = await response.text();
+      const baseUrl = decodedUrl.substring(0, decodedUrl.lastIndexOf('/') + 1);
       
-      // İçindeki tüm linkleri bul ve başına bizim proxy adresini ekle
-      // Bu sayede .ts parçaları da bizim üzerimizden geçer ve 404 vermez
       const updatedText = text.split('\n').map(line => {
-        if (line.startsWith('http') || line.includes('.ts') || line.includes('.m3u8')) {
+        if (line.trim() && !line.startsWith('#')) {
           const fullUrl = line.startsWith('http') ? line : baseUrl + line;
-          return `/api/proxy?url=${encodeURIComponent(fullUrl)}`;
+          return `/api/proxy?url=${encodeURIComponent(fullUrl.trim())}`;
         }
         return line;
       }).join('\n');
 
+      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
       return res.send(updatedText);
     }
 
-    // Eğer gelen veri direkt video parçası (.ts) ise olduğu gibi gönder
+    // EĞER .ts VİDEO PARÇASIYSA (En Önemli Kısım)
+    res.setHeader("Content-Type", "video/mp2t"); // Tarayıcıya bunun video olduğunu zorla söylüyoruz
+    res.setHeader("Cache-Control", "public, max-age=3600"); // Takılmaları önlemek için önbellek
+    
     const arrayBuffer = await response.arrayBuffer();
-    res.send(Buffer.from(arrayBuffer));
+    return res.send(Buffer.from(arrayBuffer));
 
   } catch (e) {
-    res.status(500).send("Proxy Hatası: " + e.message);
+    console.error("Proxy hatası:", e.message);
+    res.status(500).send("Hata: " + e.message);
   }
 }
