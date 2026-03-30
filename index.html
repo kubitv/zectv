@@ -96,10 +96,17 @@
 
         if (Hls.isSupported()) {
             hls = new Hls({
-                xhrSetup: function(xhr) { xhr.withCredentials = false; }
+                xhrSetup: function(xhr, url) {
+                    // Hiçbir yere takılmaması için ayar
+                    xhr.withCredentials = false;
+                },
+                // Linklerin bozulmaması için önemli
+                enableWorker: true,
+                lowLatencyMode: true
             });
             hls.loadSource(finalUrl);
             hls.attachMedia(video);
+            // ... geri kalan hls.on kısımları aynı kalabilir
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 video.play();
                 overlay.style.display = "none";
