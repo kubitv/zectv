@@ -108,38 +108,50 @@
 
     // 3. Güvenli Oynatma (HTTPS Tüneli)
     function playChannel(element, streamUrl) {
-        // Arayüz güncelle
         document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
         element.classList.add('active');
         statusElem.style.display = "block";
         statusElem.innerText = "Yükleniyor...";
 
-        // HTTPS ENGELİNİ AŞAN BÜYÜLÜ SATIR
+        // HTTPS ENGELİNİ AŞAN TÜNEL (CORS Proxy)
         const secureUrl = `https://corsproxy.io/?${encodeURIComponent(streamUrl)}`;
 
+        // Önceki HLS oynatıcıyı temizle
         if (hlsPlayer) {
             hlsPlayer.destroy();
+            hlsPlayer = null;
         }
+        videoElem.pause();
+        videoElem.removeAttribute('src');
+        videoElem.load();
 
-        if (Hls.isSupported()) {
-            hlsPlayer = new Hls({
-                enableWorker: true,
-                lowLatencyMode: true,
-                backBufferLength: 60
-            });
-            hlsPlayer.loadSource(secureUrl);
-            hlsPlayer.attachMedia(videoElem);
-            hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => {
-                videoElem.play();
-                statusElem.style.display = "none";
-            });
-            hlsPlayer.on(Hls.Events.ERROR, (e, data) => {
-                if (data.fatal) statusElem.innerText = "Yayın Hatası!";
-            });
-        } else {
-            // iOS Safari için
+        // EĞER LİNK MP4 İSE (Doğrudan oynat)
+        if (streamUrl.toLowerCase().includes(".mp4")) {
+            console.log("MP4 Modu Aktif");
             videoElem.src = secureUrl;
-            videoElem.play();
+            videoElem.play().then(() => {
+                statusElem.style.display = "none";
+            }).catch(err => {
+                statusElem.innerText = "Oynatmak için dokunun";
+            });
+        } 
+        // EĞER LİNK M3U8 İSE (Canlı Yayın Modu)
+        else {
+            if (Hls.isSupported()) {
+                hlsPlayer = new Hls();
+                hlsPlayer.loadSource(secureUrl);
+                hlsPlayer.attachMedia(videoElem);
+                hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => {
+                    videoElem.play();
+                    statusElem.style.display = "none";
+                });
+                hlsPlayer.on(Hls.Events.ERROR, (e, data) => {
+                    if (data.fatal) statusElem.innerText = "Yayın Hatası!";
+                });
+            } else {
+                videoElem.src = secureUrl;
+                videoElem.play();
+            }
         }
     }
 
