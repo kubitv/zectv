@@ -2,160 +2,95 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>ZEC IPTV PRO</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="liste.js"></script>
-    
     <style>
-        :root { --accent: #ff0055; --bg: #05050b; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; overflow: hidden; }
-
-        /* Glassmorphism Sidebar */
-        #sidebar { 
-            width: 320px; 
-            background: rgba(255, 255, 255, 0.03); 
-            backdrop-filter: blur(25px) saturate(150%);
-            -webkit-backdrop-filter: blur(25px) saturate(150%);
-            border-right: 1px solid rgba(255, 255, 255, 0.1); 
-            display: flex; flex-direction: column; 
-        }
-
-        .header { padding: 25px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-        h2 { margin: 0 0 15px 0; font-size: 20px; letter-spacing: 2px; color: var(--accent); text-align: center; }
-        
-        #search { 
-            width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 12px; outline: none; transition: 0.3s;
-        }
-        #search:focus { border-color: var(--accent); background: rgba(255, 255, 255, 0.1); }
-
-        /* Kanal Listesi */
-        #channel-list { flex: 1; overflow-y: auto; padding: 15px; }
-        .channel-item { 
-            padding: 14px; margin-bottom: 10px; background: rgba(255, 255, 255, 0.02); 
-            border-radius: 12px; cursor: pointer; font-size: 14px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(255, 255, 255, 0.05); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .channel-item:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(5px); border-color: var(--accent); }
-        .active { background: var(--accent) !important; font-weight: bold; box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); border: none; }
-
-        /* Video Alanı */
-        #main { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; }
-        video { width: 100%; height: 100%; object-fit: contain; }
-        
-        #status { 
-            position: absolute; z-index: 10; background: rgba(0,0,0,0.7); 
-            padding: 10px 20px; border-radius: 30px; font-size: 13px; border: 1px solid var(--accent); display: none;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        body { margin:0; background:#05050b; color:white; font-family:sans-serif; display:flex; height:100vh; }
+        #sidebar { width:300px; background:rgba(255,255,255,0.05); backdrop-filter:blur(20px); border-right:1px solid #333; display:flex; flex-direction:column; }
+        #channel-list { flex:1; overflow-y:auto; padding:10px; }
+        .channel-item { padding:12px; margin-bottom:5px; background:#111; border-radius:8px; cursor:pointer; font-size:13px; border:1px solid #222; }
+        .active { background:#ff0055 !important; border-color:#ff0055; }
+        #main { flex:1; background:#000; position:relative; }
+        video { width:100%; height:100%; background:#000; }
+        #status { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.8); padding:8px; border-radius:5px; display:none; color:yellow; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <div class="header">
-        <h2>ZEC IPTV PRO</h2>
-        <input type="text" id="search" placeholder="Kanal ara..." oninput="filterChannels()">
-    </div>
-    <div id="channel-list">Liste yükleniyor...</div>
+    <div style="padding:20px; border-bottom:1px solid #333;"><h3>ZEC IPTV</h3></div>
+    <div id="channel-list">Yükleniyor...</div>
 </div>
-
 <div id="main">
-    <div id="status">Kanal yükleniyor...</div>
+    <div id="status">Yükleniyor...</div>
     <video id="video" controls autoplay playsinline muted></video>
 </div>
 
 <script>
-    let hlsPlayer = null;
-    const videoElem = document.getElementById('video');
-    const statusElem = document.getElementById('status');
-    let allChannels = [];
+    let hls = null;
+    const video = document.getElementById('video');
+    const status = document.getElementById('status');
 
-    // 1. Kanal Listesini İşle
     function init() {
         if (typeof rawM3U === 'undefined') {
-            document.getElementById('channel-list').innerText = "liste.js bulunamadı!";
+            document.getElementById('channel-list').innerText = "HATA: liste.js dosyası okunamadı!";
             return;
         }
-        
         const lines = rawM3U.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes("#EXTINF:")) {
-                const name = lines[i].split(',').pop().trim();
-                const url = lines[i + 1]?.trim();
+        const list = document.getElementById('channel-list');
+        list.innerHTML = "";
+        
+        lines.forEach((line, index) => {
+            if (line.includes("#EXTINF:")) {
+                const name = line.split(',').pop().trim();
+                const url = lines[index + 1]?.trim();
                 if (url && url.startsWith('http')) {
-                    allChannels.push({ name, url });
+                    const div = document.createElement('div');
+                    div.className = 'channel-item';
+                    div.innerText = name;
+                    div.onclick = () => play(div, url);
+                    list.appendChild(div);
                 }
             }
-        }
-        filterChannels();
+        });
     }
 
-    // 2. Arama ve Filtreleme
-    function filterChannels() {
-        const query = document.getElementById('search').value.toLowerCase();
-        const filtered = allChannels.filter(c => c.name.toLowerCase().includes(query));
-        
-        const container = document.getElementById('channel-list');
-        container.innerHTML = filtered.map(c => 
-            `<div class="channel-item" onclick="playChannel(this, '${c.url}')">${c.name}</div>`
-        ).join('');
-    }
-
-    // 3. Güvenli Oynatma (HTTPS Tüneli)
-    function playChannel(element, streamUrl) {
+    function play(el, url) {
         document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
-        element.classList.add('active');
-        statusElem.style.display = "block";
-        statusElem.innerText = "Yükleniyor...";
+        el.classList.add('active');
+        status.style.display = "block";
+        status.innerText = "Yükleniyor: " + el.innerText;
 
-        // HTTPS ENGELİNİ AŞAN TÜNEL (CORS Proxy)
-        const secureUrl = `https://corsproxy.io/?${encodeURIComponent(streamUrl)}`;
+        if (hls) { hls.destroy(); }
 
-        // Önceki HLS oynatıcıyı temizle
-        if (hlsPlayer) {
-            hlsPlayer.destroy();
-            hlsPlayer = null;
-        }
-        videoElem.pause();
-        videoElem.removeAttribute('src');
-        videoElem.load();
-
-        // EĞER LİNK MP4 İSE (Doğrudan oynat)
-        if (streamUrl.toLowerCase().includes(".mp4")) {
-            console.log("MP4 Modu Aktif");
-            videoElem.src = secureUrl;
-            videoElem.play().then(() => {
-                statusElem.style.display = "none";
-            }).catch(err => {
-                statusElem.innerText = "Oynatmak için dokunun";
+        // ÖNEMLİ: Hls kütüphanesinin yüklü olup olmadığını kontrol et
+        if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            hls = new Hls();
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play();
+                status.style.display = "none";
             });
-        } 
-        // EĞER LİNK M3U8 İSE (Canlı Yayın Modu)
-        else {
-            if (Hls.isSupported()) {
-                hlsPlayer = new Hls();
-                hlsPlayer.loadSource(secureUrl);
-                hlsPlayer.attachMedia(videoElem);
-                hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => {
-                    videoElem.play();
-                    statusElem.style.display = "none";
-                });
-                hlsPlayer.on(Hls.Events.ERROR, (e, data) => {
-                    if (data.fatal) statusElem.innerText = "Yayın Hatası!";
-                });
-            } else {
-                videoElem.src = secureUrl;
-                videoElem.play();
-            }
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    status.innerText = "Yayın Hatası! (Kilit simgesinden izin verin)";
+                    console.error("HLS Hatası:", data);
+                }
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // iPhone Safari desteği
+            video.src = url;
+            video.play();
+        } else {
+            status.innerText = "Tarayıcı bu yayını desteklemiyor!";
         }
     }
 
-    window.onload = init;
+    // liste.js yüklendikten sonra çalışması için kısa bir bekleme
+    setTimeout(init, 500);
 </script>
 </body>
 </html>
