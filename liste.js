@@ -1,7 +1,7 @@
 const rawM3U = `
 #EXTM3U
 #EXTINF:-1 tvg-id="" tvg-name="TR/ Duyurular" tvg-logo="https://apkx.xyz/abc.png" group-title="TR/ MaximTV DUYURULAR",TR/ Duyurular
-http://puhtvhd.shop:8080/live/sinansert120/ymZWf3GIGE/183792.m3u8
+https://ntv-hls.iptv-p2p.com/ntv/index.m3u8
 #EXTINF:-1 tvg-id="" tvg-name="|TR| beIN Sports 1 (TTNET ÖZEL)" tvg-logo="http://apkx.xyz/tv-tum-dunya-logolar/logolar/tv-tum-dunya-logolar/turkeyT/bein_sports_1.png" group-title="TR/ BEIN SPOR",|TR| beIN Sports 1 (TTNET ÖZEL)
 http://puhtvhd.shop:8080/live/sinansert120/ymZWf3GIGE/334642.m3u8
 #EXTINF:-1 tvg-id="24KitchenTurkey.tr" tvg-name="|TR| beIN Sports 1 SD [480p]" tvg-logo="http://apkx.xyz/tv-tum-dunya-logolar/logolar/tv-tum-dunya-logolar/turkeyT/bein_sports_1.png" group-title="TR/ BEIN SPOR",|TR| beIN Sports 1 SD [480p]
