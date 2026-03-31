@@ -5,7 +5,7 @@ https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tear
 #EXTINF:-1 tvg-id="" tvg-name="|TR| beIN Sports 1 (TTNET ÖZEL)" tvg-logo="http://apkx.xyz/tv-tum-dunya-logolar/logolar/tv-tum-dunya-logolar/turkeyT/bein_sports_1.png" group-title="TR/ BEIN SPOR",|TR| beIN Sports 1 (TTNET ÖZEL)
 http://puhtvhd.shop:8080/live/sinansert120/ymZWf3GIGE/334642.m3u8
 #EXTINF:-1 tvg-id="24KitchenTurkey.tr" tvg-name="|TR| beIN Sports 1 SD [480p]" tvg-logo="http://apkx.xyz/tv-tum-dunya-logolar/logolar/tv-tum-dunya-logolar/turkeyT/bein_sports_1.png" group-title="TR/ BEIN SPOR",|TR| beIN Sports 1 SD [480p]
-http://puhtvhd.shop:8080/live/sinansert120/ymZWf3GIGE/35762.m3u8
+http://203.188.180.86:8080/live/sinansert120/ymZWf3GIGE/351541.m3u8?token=ThMJA0UMQFgRUFEJAwcCBQMAWFMJVlFQU1daV1IIBlZRBVEHAlNUAAtBTRoWQUYEA1hmDV1AW1JWUlZSBhRBF0ZUEz1fAEBYEVJSAFEBFk1AQVAJXEBbUU9BEw9TGllABABYUw5GTkBWGxVdF1tVDT1RXBJQAQRDWQ0WClsUQQ1bbgUHWwUMBhFZQwhHGRYIEUUbXlcXDQ1PQQEPQ0oCFlATW0AHVlpbEU9DWwpAWhUQTBteGzYzQ09BBh5DXQ0RXF4PQAxGD1FGW0MUR1xHPhBQShBLBwAMBhFBXBUIQU4XXAAaaQcNDF0GAkwMWloSQA8bVhtOQwwMDQoSWEo8ElxVQ1gUUlVXBEEc
 #EXTINF:-1 tvg-id="" tvg-name="|TR| beIN Sports 1 720p" tvg-logo="http://apkx.xyz/tv-tum-dunya-logolar/logolar/tv-tum-dunya-logolar/turkeyT/bein_sports_1.png" group-title="TR/ BEIN SPOR",|TR| beIN Sports 1 720p
 http://puhtvhd.shop:8080/live/sinansert120/ymZWf3GIGE/351541.m3u8
 #EXTINF:-1 tvg-id="24KitchenTurkey.tr" tvg-name="|TR| beIN Sports 1 HD [VIP]" tvg-logo="http://apkx.xyz/tv-tum-dunya-logolar/logolar/tv-tum-dunya-logolar/turkeyT/bein_sports_1.png" group-title="TR/ BEIN SPOR",|TR| beIN Sports 1 HD [VIP]
